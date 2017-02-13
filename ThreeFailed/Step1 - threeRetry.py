@@ -43,8 +43,8 @@ def load_mnist(images_filename,labels_filename):
 [test_images,test_labels]=load_mnist(test_filename,test_lbl)
 
 #Método para concatenar imagenes y crear nuevas 20000 imagenes con 3
-image_size = 128
-rgb = 3
+image_size = 128 #128
+rgb = 1
 numbers_per_img = 3
 
 def create_3mnist(images,labels):
@@ -56,17 +56,15 @@ def create_3mnist(images,labels):
 	for i in range(final_images):
 		newImage=np.concatenate((np.zeros((28,22),dtype=np.uint8),images[i],images[i+final_images],images[i+final_images*2],np.zeros((28,22),dtype=np.uint8)),axis=1)
 		newImage=np.concatenate((np.zeros((50,128),dtype=np.uint8),newImage,np.zeros((50,128),dtype=np.uint8)),axis=0)
-		images_3[i,:,:,0]=newImage[:,:]
-		images_3[i,:,:,1]=newImage[:,:]
-		images_3[i,:,:,2]=newImage[:,:]
 		
 		labels_3[i]=[labels[i],labels[i+final_images],labels[i+final_images*2]]
 		
 	return images_3,labels_3
 	
+
 [training_cv_images,training_cv_labels]=create_3mnist(training_cv_images,training_cv_labels) #FUNCIONAA
 [test_images,test_labels]=create_3mnist(test_images,test_labels)
-
+	
 #Creando training set y cv set
 training_images=training_cv_images[0:15500]
 training_labels=training_cv_labels[0:15500]
@@ -74,35 +72,34 @@ cv_images=training_cv_images[15500:20000]
 cv_labels=training_cv_labels[15500:20000]
 
 
+
 #####################2DA PARTE######################
 
 batch_size = 16
+patch_size= 5
 depth = 8
 num_labels=10
 num_hidden=64 
-features=95848
+features=2048
 
 def accuracy(predictions, labels): 
     correct_uno=np.sum(np.argmax(predictions[:,0,:],1) == np.argmax(labels[:,0,:],1))
     correct_dos=np.sum(np.argmax(predictions[:,1,:],1) == np.argmax(labels[:,1,:],1))
     correct_tres=np.sum(np.argmax(predictions[:,2,:],1) == np.argmax(labels[:,2,:],1))
-    return (100.0 * (correct_uno+correct_dos+correct_tres) / predictions.shape[0]*predictions.shape[1])
+    return (100.0 * (correct_uno+correct_dos+correct_tres) / (predictions.shape[0]*predictions.shape[1])
 
 def reformat_labels(data):
     labels = np.zeros((len(data),3,10),dtype=np.float32)
     labels = (np.arange(num_labels) == data[:,:,None]).astype(np.float32)
     return labels
-
     
 training_labels=reformat_labels(training_labels)
 cv_labels=reformat_labels(cv_labels)
 test_labels=reformat_labels(test_labels)
+ 
+
 #MODELO
-#1 - 1x1 convolution
-#2 - 1x1 --> 3x3 convolution
-#3 - 1x1 --> 5x5 convolution - DOING ---> COMPLETAR ESTA SECCION
-
-
+#INPUT => CONV => RELU => POOL => CONV => RELU => POOL => FC => RELU => FC
 
 graph=tf.Graph()
 
@@ -110,75 +107,51 @@ with graph.as_default():
     
     #Data
     tf_train_dataset = tf.placeholder(tf.float32, shape=(batch_size, image_size, image_size, rgb))
-    tf_train_labels = tf.placeholder(tf.float32, shape=(batch_size, numbers_per_img, num_labels))
+    tf_train_labels = tf.placeholder(tf.float32, shape=(batch_size,numbers_per_img, num_labels))
     tf_cv_dataset = tf.constant(cv_images,dtype=tf.float32)
     tf_test_dataset = tf.constant(test_images,dtype=tf.float32)
 	
     #Variables
-    path1_weights=tf.Variable(tf.truncated_normal([1,1,rgb,depth],stddev=0.1))
-    path1_biases=tf.Variable(tf.zeros([depth]))
+    #INPUT => CONV => RELU => POOL
+    layer1_weights=tf.Variable(tf.truncated_normal([patch_size,patch_size,rgb,depth],stddev=0.1))
+    layer1_biases=tf.Variable(tf.zeros([depth]))
     
-    path2_weights_conv1=tf.Variable(tf.truncated_normal([1,1,rgb,depth],stddev=0.1))
-    path2_biases_conv1=tf.Variable(tf.zeros([depth]))
-    path2_weights_conv2=tf.Variable(tf.truncated_normal([3,3,depth,depth],stddev=0.1))
-    path2_biases_conv2=tf.Variable(tf.constant(1.0,shape=[depth]))
-    
-    path3_weights_conv1=tf.Variable(tf.truncated_normal([1,1,rgb,depth],stddev=0.1))
-    path3_biases_conv1=tf.Variable(tf.zeros([depth]))
-    path3_weights_conv2=tf.Variable(tf.truncated_normal([5,5,depth,depth],stddev=0.1))
-    path3_biases_conv2=tf.Variable(tf.constant(1.0,shape=[depth]))
-    
-    path4_weights_conv1=tf.Variable(tf.truncated_normal([3,3,rgb,depth],stddev=0.1))
-    path4_biases_conv1=tf.Variable(tf.zeros([depth]))
-    path4_weights_conv2=tf.Variable(tf.truncated_normal([1,1,depth,depth],stddev=0.1))
-    path4_biases_conv2=tf.Variable(tf.constant(1.0,shape=[depth]))
-    
+    layer2_weights=tf.Variable(tf.truncated_normal([patch_size,patch_size,depth,depth],stddev=0.1))
+    layer2_biases= tf.Variable(tf.constant(1.0, shape=[depth]))
+        
     fully_connected_weights=tf.Variable(tf.truncated_normal([features, num_hidden], stddev=0.1))
-    fully_connected_biases=tf.constant(1.0,shape=[num_hidden])
+    fully_connected_biases=tf.constant(1.0,shape=[num_hidden])    
     
+    classifier_weights = tf.Variable(tf.truncated_normal([num_hidden, num_labels], stddev=0.1))
+    classifier_biases = tf.Variable(tf.constant(1.0, shape=[num_labels]))
+	
     classifier1_weights = tf.Variable(tf.truncated_normal([num_hidden, num_labels], stddev=0.1))
     classifier1_biases = tf.Variable(tf.constant(1.0, shape=[num_labels]))
     classifier2_weights = tf.Variable(tf.truncated_normal([num_hidden, num_labels], stddev=0.1))
     classifier2_biases = tf.Variable(tf.constant(1.0, shape=[num_labels]))
     classifier3_weights = tf.Variable(tf.truncated_normal([num_hidden, num_labels], stddev=0.1))
     classifier3_biases = tf.Variable(tf.constant(1.0, shape=[num_labels]))
-	
+    
     #Model
-    def model(data): #Probando stride 2 en 1x1 convolution
-        conv1=tf.nn.conv2d(data,path1_weights,[1,2,2,1],padding='VALID')
-        hidden1=tf.nn.relu(conv1+path1_biases)
-        shape1=hidden1.get_shape().as_list()
-        reshape1 = tf.reshape(hidden1, [shape1[0], shape1[1] * shape1[2] * shape1[3]])
+    def model(data):
+        #INPUT => CONV => RELU => POOL
+        conv=tf.nn.conv2d(data,layer1_weights,[1,2,2,1], padding='SAME')
+        hidden=tf.nn.relu(conv+layer1_biases)
+        pool=tf.nn.max_pool(hidden, [1,2,2,1], [1,2,2,1], padding='SAME')
+        #CONV => RELU => POOL
+        conv=tf.nn.conv2d(pool,layer2_weights,[1,1,1,1], padding='SAME')
+        hidden=tf.nn.relu(conv+layer2_biases)
+        pool=tf.nn.max_pool(hidden, [1,2,2,1], [1,2,2,1], padding='SAME')
         
-        conv2_1=tf.nn.conv2d(data,path2_weights_conv1,[1,2,2,1],padding='VALID')
-        hidden2_1=tf.nn.relu(conv2_1+path2_biases_conv1)
-        conv2_2=tf.nn.conv2d(hidden2_1,path2_weights_conv2,[1,1,1,1],padding='VALID')
-        hidden2_2=tf.nn.relu(conv2_2+path2_biases_conv2)
-        shape2=hidden2_2.get_shape().as_list()
-        reshape2 = tf.reshape(hidden2_2, [shape2[0], shape2[1] * shape2[2] * shape2[3]])
+        #FC => RELU => FC
+        shape=pool.get_shape().as_list()
+        reshape = tf.reshape(pool, [shape[0], shape[1] * shape[2] * shape[3]])
+        hidden = tf.nn.relu(tf.matmul(reshape,fully_connected_weights)+fully_connected_biases)
+		
+        matmul1=tf.matmul(hidden,classifier1_weights)+classifier1_biases
+        matmul2=tf.matmul(hidden,classifier2_weights)+classifier2_biases
+        matmul3=tf.matmul(hidden,classifier3_weights)+classifier3_biases
         
-        conv3_1=tf.nn.conv2d(data,path3_weights_conv1,[1,2,2,1],padding='VALID')
-        hidden3_1=tf.nn.relu(conv3_1+path3_biases_conv1)
-        conv3_2=tf.nn.conv2d(hidden3_1,path3_weights_conv2,[1,1,1,1],padding='VALID')
-        hidden3_2=tf.nn.relu(conv3_2+path3_biases_conv2)                        
-        shape3=hidden3_2.get_shape().as_list()
-        reshape3 = tf.reshape(hidden3_2, [shape3[0], shape3[1] * shape3[2] * shape3[3]])
-        
-        conv4_1=tf.nn.conv2d(data,path4_weights_conv1,[1,3,3,1],padding='VALID')
-        hidden4_1=tf.nn.relu(conv4_1+path4_biases_conv1)
-        pool4_1=tf.nn.max_pool(hidden4_1, [1,3,3,1], [1,3,3,1], padding='VALID')
-        conv4_2=tf.nn.conv2d(pool4_1,path4_weights_conv2,[1,2,2,1],padding='VALID')
-        hidden4_2=tf.nn.relu(conv4_2+path4_biases_conv2)
-        shape4=hidden4_2.get_shape().as_list()
-        reshape4 = tf.reshape(hidden4_2, [shape4[0], shape4[1] * shape4[2] * shape4[3]])        
-        
-        vector=tf.concat(1,[reshape1,reshape2,reshape3,reshape4])
-        fc_hidden=tf.nn.relu(tf.matmul(vector,fully_connected_weights)+fully_connected_biases)
-        
-        matmul1=tf.matmul(fc_hidden,classifier1_weights)+classifier1_biases
-        matmul2=tf.matmul(fc_hidden,classifier2_weights)+classifier2_biases
-        matmul3=tf.matmul(fc_hidden,classifier3_weights)+classifier3_biases
-
         return [matmul1,matmul2,matmul3]
 		
     #Training
@@ -187,7 +160,7 @@ with graph.as_default():
                         tf.nn.softmax_cross_entropy_with_logits(labels=tf_train_labels,logits=logits))
 		
     #Optimizador
-    optimizer = tf.train.GradientDescentOptimizer(0.05).minimize(loss) #Estaba en 0.05
+    optimizer = tf.train.GradientDescentOptimizer(0.00625).minimize(loss)
 		
     #Predicciones
     train_prediction=tf.nn.softmax(logits)
@@ -197,7 +170,7 @@ with graph.as_default():
     test_prediction=tf.transpose(test_prediction,perm=[1,0,2])
 	
     #Ejecucion
-    num_steps=501
+    num_steps=1001
 	
     with tf.Session(graph=graph) as session:
         tf.global_variables_initializer().run()
