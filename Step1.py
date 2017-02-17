@@ -80,7 +80,6 @@ cv_images=training_cv_images[45000:60000]
 cv_labels=training_cv_labels[45000:60000]
 
 
-
 #####################2DA PARTE######################
 
 batch_size = 16
