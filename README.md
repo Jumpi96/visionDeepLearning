@@ -17,12 +17,5 @@ Note: I am having some problems to train my ConvNet because of my PC. I'm going 
 I will continue working on this on the next weeks.
 
 ## Sources:
-	-[Udacity's Deep Learning Course] (https://www.udacity.com/course/deep-learning--ud7309)
-	-[Thomalm GitHub] (https://github.com/thomalm/svhn-multi-digit/)
-	
-	
-	
-	
-	
-
-
+	[Udacity's Deep Learning Course](https://www.udacity.com/course/deep-learning--ud7309)
+	[Thomalm GitHub](https://github.com/thomalm/svhn-multi-digit/)
