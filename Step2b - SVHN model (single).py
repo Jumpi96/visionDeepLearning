@@ -1,67 +1,25 @@
-#Paquetes necesarios
+#Packages
 from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 from six.moves import range
 import h5py
 
-#-----------------CARGA DE DATOS-------------------
+#Loading data
 
-##Cargar data
-#filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/SVHN_simple.h5'
-## Open the file as readonly
-#h5f = h5py.File(filename, 'r')
-#
-## Load the training, test and validation set
-#test_images = h5f['test_images'][:]
-#test_labels = h5f['test_labels'][:]
-#cv_images = h5f['cv_images'][:]
-#cv_labels = h5f['cv_labels'][:]
-#
-## Close this file
-#h5f.close()
-#
-#filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/SVHN_simple_train1.h5'
-#h5f = h5py.File(filename, 'r')
-#training_images = h5f['training_images'][:]
-#training_labels = h5f['training_labels'][:]
-#h5f.close()
-#
-#filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/SVHN_simple_train2.h5'
-#h5f = h5py.File(filename, 'r')
-#temp_images = h5f['training_images'][:]
-#temp_labels = h5f['training_labels'][:]
-#training_images=np.concatenate([training_images,temp_images])
-#h5f.close()
-#
-#filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/SVHN_simple_train3.h5'
-#h5f = h5py.File(filename, 'r')
-#temp_images = h5f['training_images'][:]
-#temp_labels = h5f['training_labels'][:]
-#training_images=np.concatenate([training_images,temp_images])
-#h5f.close()
-#
-#filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/SVHN_simple_train4.h5'
-#h5f = h5py.File(filename, 'r')
-#temp_images = h5f['training_images'][:]
-#temp_labels = h5f['training_labels'][:]
-#training_images=np.concatenate([training_images,temp_images])
-#h5f.close()
-#
-#filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/SVHN_simple_train5.h5'
-#h5f = h5py.File(filename, 'r')
-#temp_images = h5f['training_images'][:]
-#temp_labels = h5f['training_labels'][:]
-#training_images=np.concatenate([training_images,temp_images])
-#h5f.close()
-#
-#print('Training set', training_images.shape, training_labels.shape)
-#print('Validation set', cv_images.shape, cv_labels.shape)
-#print('Test set', test_images.shape, test_labels.shape)
-#
-#import sys
-#sys.exit()
+filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/SVHN_simple.h5'
+h5f = h5py.File(filename, 'r')
 
+training_images = h5f['training_images'][:]
+training_labels = h5f['training_labels'][:]
+test_images = h5f['test_images'][:]
+test_labels = h5f['test_labels'][:]
+cv_images = h5f['cv_images'][:]
+cv_labels = h5f['cv_labels'][:]
+
+h5f.close()
+
+#Parameters
 image_size=32
 batch_size = 64
 patch_size= 5
@@ -76,10 +34,7 @@ def accuracy(predictions, labels):
   return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))
           / predictions.shape[0])
 
-
-
-
-#MODELO
+#MODEL
 #INPUT => CONV => RELU => POOL => CONV => RELU => POOL => FC => RELU => FC
 
 graph=tf.Graph()
@@ -93,7 +48,6 @@ with graph.as_default():
     tf_test_dataset = tf.constant(test_images,dtype=tf.float32)
 	
     #Variables
-    #INPUT => CONV => RELU => POOL
     layer1_weights=tf.Variable(tf.truncated_normal([patch_size,patch_size,rgb,depth],stddev=0.1))
     layer1_biases=tf.Variable(tf.zeros([depth]))
     
@@ -134,7 +88,6 @@ with graph.as_default():
         
         return tf.matmul(hidden,classifier_weights)+classifier_biases
 		
-
     logits=model(tf_train_dataset)
 
     loss=tf.reduce_mean(
@@ -148,18 +101,16 @@ with graph.as_default():
                                              10000,
                                              0.96,
                                              staircase=True)
-    
 
-    #Optimizador
+    #Optimizer
     optimizer = tf.train.AdagradOptimizer(learning_rate).minimize(loss,global_step=global_step)
 		
-    #Predicciones
+    #Predictions
     train_prediction=tf.nn.softmax(logits)
     cv_prediction=tf.nn.softmax(model(tf_cv_dataset,False))
     test_prediction=tf.nn.softmax(model(tf_test_dataset,False))
 	
-    #Ejecucion
-    num_steps=9375
+    num_steps=9375 #1 epoch
     
     with tf.Session(graph=graph) as session:
         tf.global_variables_initializer().run()
@@ -169,11 +120,11 @@ with graph.as_default():
             batch_data=training_images[offset:(offset+batch_size),:,:,:]
             batch_labels=training_labels[offset:(offset+batch_size),:]
             feed_dict = {tf_train_dataset:batch_data,tf_train_labels:batch_labels}
-            _,l,predictions=session.run([optimizer,loss,train_prediction],
+            _,l,lr,predictions=session.run([optimizer,loss,learning_rate,train_prediction],
 				feed_dict=feed_dict)
             if (step%500==0):
                 print('Minibatch loss at step %d: %f' % (step, l))
-                #print('Minibatch learning rate: %.6f' % (lr))
+                print('Minibatch learning rate: %.6f' % (lr))
                 print('Minibatch accuracy: %.1f%%' % accuracy(predictions, batch_labels))
                 print('Validation accuracy: %.1f%%' % accuracy(
 		      cv_prediction.eval(), cv_labels))
