@@ -1,37 +1,72 @@
 #Paquetes necesarios
 from __future__ import print_function
-from array import array as pyarray
-import scipy.io
 import numpy as np
 import tensorflow as tf
 from six.moves import range
+import h5py
 
+#-----------------CARGA DE DATOS-------------------
 
-#Cargar data
-filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/data/SVHN_simple.h5'
-# Open the file as readonly
-h5f = h5py.File(filename, 'r')
+##Cargar data
+#filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/SVHN_simple.h5'
+## Open the file as readonly
+#h5f = h5py.File(filename, 'r')
+#
+## Load the training, test and validation set
+#test_images = h5f['test_images'][:]
+#test_labels = h5f['test_labels'][:]
+#cv_images = h5f['cv_images'][:]
+#cv_labels = h5f['cv_labels'][:]
+#
+## Close this file
+#h5f.close()
+#
+#filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/SVHN_simple_train1.h5'
+#h5f = h5py.File(filename, 'r')
+#training_images = h5f['training_images'][:]
+#training_labels = h5f['training_labels'][:]
+#h5f.close()
+#
+#filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/SVHN_simple_train2.h5'
+#h5f = h5py.File(filename, 'r')
+#temp_images = h5f['training_images'][:]
+#temp_labels = h5f['training_labels'][:]
+#training_images=np.concatenate([training_images,temp_images])
+#h5f.close()
+#
+#filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/SVHN_simple_train3.h5'
+#h5f = h5py.File(filename, 'r')
+#temp_images = h5f['training_images'][:]
+#temp_labels = h5f['training_labels'][:]
+#training_images=np.concatenate([training_images,temp_images])
+#h5f.close()
+#
+#filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/SVHN_simple_train4.h5'
+#h5f = h5py.File(filename, 'r')
+#temp_images = h5f['training_images'][:]
+#temp_labels = h5f['training_labels'][:]
+#training_images=np.concatenate([training_images,temp_images])
+#h5f.close()
+#
+#filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/SVHN_simple_train5.h5'
+#h5f = h5py.File(filename, 'r')
+#temp_images = h5f['training_images'][:]
+#temp_labels = h5f['training_labels'][:]
+#training_images=np.concatenate([training_images,temp_images])
+#h5f.close()
+#
+#print('Training set', training_images.shape, training_labels.shape)
+#print('Validation set', cv_images.shape, cv_labels.shape)
+#print('Test set', test_images.shape, test_labels.shape)
+#
+#import sys
+#sys.exit()
 
-# Load the training, test and validation set
-training_images = h5f['training_images'][:]
-training_labels = h5f['training_labels'][:]
-test_images = h5f['test_images'][:]
-test_labels = h5f['test_labels'][:]
-cv_images = h5f['cv_images'][:]
-cv_labels = h5f['cv_labels'][:]
-
-# Close this file
-h5f.close()
-
-print('Training set', training_images.shape, training_labels.shape)
-print('Validation set', cv_images.shape, cv_labels.shape)
-print('Test set', test_images.shape, test_labels.shape)
-
-
-
+image_size=32
 batch_size = 64
 patch_size= 5
 depth = 32
+rgb=1
 depth2 = 64
 num_labels=10
 num_hidden=256
@@ -124,7 +159,7 @@ with graph.as_default():
     test_prediction=tf.nn.softmax(model(tf_test_dataset,False))
 	
     #Ejecucion
-    num_steps=3001
+    num_steps=9375
     
     with tf.Session(graph=graph) as session:
         tf.global_variables_initializer().run()
@@ -136,7 +171,7 @@ with graph.as_default():
             feed_dict = {tf_train_dataset:batch_data,tf_train_labels:batch_labels}
             _,l,predictions=session.run([optimizer,loss,train_prediction],
 				feed_dict=feed_dict)
-            if (step%50==0):
+            if (step%500==0):
                 print('Minibatch loss at step %d: %f' % (step, l))
                 #print('Minibatch learning rate: %.6f' % (lr))
                 print('Minibatch accuracy: %.1f%%' % accuracy(predictions, batch_labels))

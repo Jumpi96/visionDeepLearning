@@ -12,7 +12,7 @@ import h5py
 train_filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/train_32x32.mat'
 extra_filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/extra_32x32.mat'
 test_filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/test_32x32.mat'
-new_data_filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/data/SVHN_simple.h5'
+new_data_filename='D:/Code/Udacity - Deep Learning/Project/SVHN2/SVHN_simple.h5'
 
 #Cargar SVHNdigits
 def load_svhn(filename):
@@ -81,15 +81,9 @@ def reformat(dataset,labels):
     return newDataset,labels
     
 [training_images,training_labels]=reformat(training_images,training_labels)
+
 [cv_images,cv_labels]=reformat(cv_images,cv_labels)
 [test_images,test_labels]=reformat(test_images,test_labels)
-
-
-#BORRAR DESPUÉS
-print("Training", training_images.shape, training_labels.shape)
-print("Test", test_images.shape, test_labels.shape)
-print('Validation', cv_images.shape, cv_labels.shape)
-
 
 #Normalización
 # Calculate the mean on the training data
@@ -107,12 +101,12 @@ cv_images = (train_mean - cv_images) / train_std
 h5f = h5py.File(new_data_filename, 'w')
 
 # Store the datasets
-h5f.create_dataset('training_images', data=training_images)
-h5f.create_dataset('training_labels', data=training_labels)
 h5f.create_dataset('test_images', data=test_images)
 h5f.create_dataset('test_labels', data=test_labels)
 h5f.create_dataset('cv_images', data=cv_images)
 h5f.create_dataset('cv_labels', data=cv_labels)
+h5f.create_dataset('training_images', data=training_images)
+h5f.create_dataset('training_labels', data=training_labels)
 
 # Close the file
 h5f.close()
